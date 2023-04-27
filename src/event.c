@@ -27,6 +27,7 @@ char *compare_operator(int comparison)
         case CMP_MOREQ: return ">=";
         case CMP_LESEQ: return "<=";
     }
+    return "";
 }
 
 int compare_numbers(float value1, float value2, int comparison)
@@ -39,6 +40,7 @@ int compare_numbers(float value1, float value2, int comparison)
         case CMP_MOREQ: return value1 >= value2;
         case CMP_LESEQ: return value1 <= value2;
     }
+    return -1;
 }
 int compare_strings(char *value1, char *value2, int comparison)
 {
@@ -47,6 +49,7 @@ int compare_strings(char *value1, char *value2, int comparison)
         case CMP_EQ: return cmp == 0;
         case CMP_NEQ: return cmp != 0;
     }
+    return -1;
 }
 int comparison_in_contstraint(int comparison, int con1, int con2)
 {
@@ -55,7 +58,7 @@ int comparison_in_contstraint(int comparison, int con1, int con2)
 
 /*Compares two values depending on type.
 if type = 0, they are compared as numbers
-if type = 1, they are compared as stringd*/
+if type = 1, they are compared as strings*/
 int compare_values(char* value1, char* value2, int type, int comparison)
 {
     switch(type){
@@ -81,7 +84,6 @@ json_object *find_by_key(json_object *obj, char *key)
     struct json_object_iterator end = json_object_iter_end(obj);
     
     while (!json_object_iter_equal(&current, &end)) {
-        //printf("%s\n", json_object_iter_peek_name(&current));
         if(strcmp(json_object_iter_peek_name(&current), key) == 0){
             return json_object_get(json_object_iter_peek_value(&current));
         }
@@ -108,7 +110,6 @@ int print_event(struct event event)
 /*Does something when event conditions are met*/
 int trigger_event(struct event event, char *value_from_payload)
 {
-    //print_event(event);
     char message[1024];
     snprintf(message, sizeof(message), "Topic: %s\r\nKey: %s\r\nActual value (%s) %s Event value (%s)\r\n",
         event.topic, event.key, value_from_payload, compare_operator(event.comparison), event.value);
@@ -128,7 +129,7 @@ int check_events(char *topic, char *payload)
         return JSON_ERR;
     }
     json_object *data = find_by_key(obj, "data");
-
+    
     if(!data){
         syslog(LOG_ERR, "Can't find data object");
         return JSON_ERR;
@@ -141,15 +142,12 @@ int check_events(char *topic, char *payload)
     }
     
     for(int i = 0; i < count; i ++){
-        //print_event(events[i]);
         json_object *value = find_by_key(data, events[i].key);
         if(!value){
-            //syslog(LOG_ERR,"Can't find value for event key: %s", events[i].key);
             continue;
         }
 
         value_from_payload = (char*)json_object_get_string(value);
-        //printf("%s value from payload: %s\n", events[i].key, value_from_payload);
         int c = compare_values(value_from_payload, events[i].value, events[i].value_type, events[i].comparison);
         if(c > 0){
                 //trigger event
@@ -158,9 +156,9 @@ int check_events(char *topic, char *payload)
                 trigger_event(events[i], value_from_payload);
                 events_triggered++;
         }else if(c < 0) syslog(LOG_ERR, "Unknown comparison detected");
-        // printf("%s %s %s, result: %d\n",
-        //    events[i].value, compare_operator(events[i].comparison), value_from_payload, c);
-
+        json_object_put(value);
     }
+    json_object_put(data);
+    json_object_put(obj);
     return events_triggered;
 }

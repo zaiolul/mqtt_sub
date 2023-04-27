@@ -3,7 +3,7 @@ BIN:=mqtt_sub
 SRCS:=$(wildcard *.c)
 OBJS:=$(SRCS:.c=.o)
 
-LIB:= -largp -lmosquitto -luci -ljson-c -lcurl -lsqlite3
+LIB:= -lm -lmosquitto -luci -ljson-c -lcurl -lsqlite3
 #LDFLAGS:=-L../sdk/build/lib $(LIB)
 INC:= -I./includes
  #-I../sdk/utils -I../sdk/include -I../sdk/interface -I../sdk/libraries/coreJSON/source/include 

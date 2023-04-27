@@ -18,7 +18,7 @@ int load_package(struct uci_package **package, char *package_path)
     strncpy(path, package_path, sizeof(path));
     int ret;
     if( ret = uci_load(ctx, path, package) != UCI_OK){
-        syslog(LOG_ERR, "Cant find package: %s", package_path);
+        syslog(LOG_ERR, "Cant find package or bad format: %s", package_path);
         return ret;
     }
     return UCI_OK;
@@ -48,7 +48,7 @@ int get_sender_data(struct sender *sender, char *sender_mail)
 {
     struct uci_package *package;
     if(load_package(&package, "user_groups") != UCI_OK)
-        return UCI_ERR_INVAL;
+        return -1;
     int k = 0;
     int found = 0;
     struct uci_element *i;
@@ -102,7 +102,7 @@ int get_topic_data(struct uci_section *section, struct topic *topic)
         fields_inserted ++;
     }
     if(fields_inserted < field_count){
-        syslog(LOG_ERR, "Failed to get topic data, check config", topic);
+        syslog(LOG_ERR, "Failed to get topic data, check config");
         return TOPIC_CONFIG_ERR;
     }
     return UCI_OK;
@@ -202,7 +202,7 @@ int get_topic_events(struct event *events, char *topic)
 
     struct uci_package *package;
     if(load_package(&package, "mqtt_sub") != UCI_OK)
-        return UCI_ERR_INVAL;
+        return -1;
     
     struct uci_element *i;
     uci_foreach_element(&package->sections, i){
@@ -251,8 +251,8 @@ int get_all_topics(struct topic *topics)
     int count = 0;
     struct uci_package *package;
     if(load_package(&package, "mqtt_sub") != UCI_OK)
-        return UCI_ERR_INVAL;
-
+        return -1;
+    
     struct uci_element *i;
     uci_foreach_element(&package->sections, i){
         if(count == TOPIC_CAP){
@@ -271,10 +271,6 @@ int get_all_topics(struct topic *topics)
         if(check_topic_duplicate(topics, topic, count))
             continue;
         memcpy(&(topics[count++]), &topic, sizeof(topic));
-        // if(subscribe_topic(mosq, topic, qos) != UCI_OK)
-        //     continue;
-
-        //syslog(LOG_INFO, "Subscribed to topic: %s, qos: %d", topic, qos);
     }
     uci_unload(ctx, package);
     return count;
@@ -288,6 +284,7 @@ int uci_start()
         syslog(LOG_ERR, "Failed to allocate UCI context");
         return UCI_ERR_INVAL;
     }
+    return UCI_OK;
 }
 /*Frees the uci context*/
 int uci_end()

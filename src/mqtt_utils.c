@@ -78,6 +78,7 @@ error_t parse_opt (int key, char *arg, struct argp_state *state)
     default:
         return ARGP_ERR_UNKNOWN;
     }
+    
     return 0;
 }
 /*makes the program a daemon*/
@@ -190,7 +191,7 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
     struct arguments args = *(struct arguments*)obj;
     
 	if(reason_code != 0){
-		mosquitto_disconnect(mosq);
+        run = 0;
         return;
 	}
     int ret = subscribe_all_topics();
@@ -303,26 +304,25 @@ int mqtt_loop(struct mosquitto *mosq)
 int mqtt_main(struct arguments args)
 {
     int ret = 0;
-    /*register interrupt*/
-    struct sigaction act;
-    act.sa_handler = sighandler;
-    sigaction(SIGINT,  &act, 0);
-    sigaction(SIGTERM, &act, 0);
+    signal(SIGINT, sighandler);
+    signal(SIGTERM, sighandler);
     
     /*start log*/
     openlog("mqtt_sub", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL0);
     setlogmask (LOG_UPTO (LOG_INFO));
-
+    
     uci_start();
     sqlite_db_start();
     mqtt_setup(args);
     
-    ret = mosquitto_connect(mosq, args.host, args.port, 10);
+    ret = mosquitto_connect(mosq, args.host, args.port, 5);
 	if(ret != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
         uci_end();
         mosquitto_lib_cleanup();
+        sqlite_db_end();
         syslog(LOG_ERR, "Error: %s\n", mosquitto_strerror(ret));
+        closelog();
         printf("Error: %s\n", mosquitto_strerror(ret));
 		return ret;
 	}
@@ -345,5 +345,6 @@ int mqtt_main(struct arguments args)
     sqlite_db_end();
 
     syslog(LOG_INFO, "MQTT sub stop");
+    closelog();
     return MOSQ_ERR_SUCCESS;
 }

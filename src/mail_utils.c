@@ -8,7 +8,7 @@
 #define EMAIL_LEN 1024
 char email_msg[EMAIL_LEN];
 /*Creates an email message string*/
-int form_email_message(char* dest, char* content, char *from){
+void form_email_message(char* dest, char* content, char *from){
     //printf("From: %s %s\n", from, content);
     snprintf(dest, EMAIL_LEN, "From: MQTT subscriber <%s>\r\nTo: %s\r\nSubject: MQTT Event\r\n\r\n%s\r\n", from, "user", content );
 }
@@ -46,9 +46,9 @@ void curl_set_sender_data(CURL *curl, struct sender sender)
         curl_easy_setopt(curl, CURLOPT_USERNAME, sender.user);
         curl_easy_setopt(curl, CURLOPT_PASSWORD, sender.password);
         curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "/etc/cacert.pem");
+        curl_easy_setopt(curl, CURLOPT_CAINFO, "/home/studentas/Documents/ca.cert.pem");
     }
-    char url[MAX_STR_LEN];
+    char url[MAX_STR_LEN + 5];
     
     sprintf(url, "%s:%d", sender.smtp_ip, sender.port);
     curl_easy_setopt(curl, CURLOPT_URL, sender.smtp_ip);
@@ -56,18 +56,8 @@ void curl_set_sender_data(CURL *curl, struct sender sender)
 
     curl_easy_setopt(curl, CURLOPT_MAIL_FROM, sender.email);
 }
-/*Sets CURL message receivers options*/
-void curl_set_receivers_data(CURL *curl, struct curl_slist *recipients, char addresses[][MAX_STR_LEN])
-{
 
-    for(int i = 0; i < MAX_RECEIVERS; i ++){
-        if(strcmp(addresses[i], "") == 0)
-            break;
-        recipients = curl_slist_append(recipients, addresses[i]);
-    }
-    
-    curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
-}
+   
 /*Sends an email to everyone in ADDRESSES from SENDER_MAIL
 The sent email contents are defined by MESSAGE*/
 int send_email(char *sender_mail, char addresses[][MAX_STR_LEN], char *message)
@@ -88,7 +78,13 @@ int send_email(char *sender_mail, char addresses[][MAX_STR_LEN], char *message)
     if(curl){
         
         curl_set_sender_data(curl, sender);
-        curl_set_receivers_data(curl, recipients, addresses);
+        for(int i = 0; i < MAX_RECEIVERS; i ++){
+            if(strcmp(addresses[i], "") == 0)
+                break;
+            recipients = curl_slist_append(recipients, addresses[i]);
+        }
+    
+        curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
         curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
         curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
