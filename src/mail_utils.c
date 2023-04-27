@@ -6,6 +6,7 @@
 #include "mqtt_utils.h"
 
 #define EMAIL_LEN 1024
+#define CAFILE "<cert file path>"
 char email_msg[EMAIL_LEN];
 /*Creates an email message string*/
 void form_email_message(char* dest, char* content, char *from){
@@ -46,7 +47,7 @@ void curl_set_sender_data(CURL *curl, struct sender sender)
         curl_easy_setopt(curl, CURLOPT_USERNAME, sender.user);
         curl_easy_setopt(curl, CURLOPT_PASSWORD, sender.password);
         curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "/home/studentas/Documents/ca.cert.pem");
+        curl_easy_setopt(curl, CURLOPT_CAINFO, CAFILE);
     }
     char url[MAX_STR_LEN + 5];
     
