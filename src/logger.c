@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DB_PATH "/home/studentas/mqtt_sub.db"
+#define DB_PATH "path/file.db"
 sqlite3 *obj;
 
 /*Opens database file or creates it if not found*/
