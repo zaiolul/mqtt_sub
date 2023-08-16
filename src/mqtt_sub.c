@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <argp.h>
 #include "mqtt_utils.h"
-//TODO: persikelti usergroups config i sito pc /etc/config, pasiziuret memory leak su event trigger kazkas susije
+
 static struct argp argp = { options, parse_opt, 0, doc };
 
 int main(int argc, char* argv[])
